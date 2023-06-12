@@ -1,0 +1,53 @@
+#include <iostream>
+#include <portaudio.h>
+
+#define SAMPLE_RATE 58000
+#define RECORD_SECONDS 4.5
+
+int main() {
+    PaStream *stream;
+    PaError err;
+    err = Pa_Initialize();
+    if (err != paNoError) {
+        std::cerr << "PortAudio initialization failed: " << Pa_GetErrorText(err) << std::endl;
+        return 1;
+    }
+    PaStreamParameters inputParams;
+    inputParams.device = Pa_GetDefaultInputDevice();
+    inputParams.channelCount = 1;
+    inputParams.sampleFormat = paFloat32;
+    inputParams.suggestedLatency = Pa_GetDeviceInfo(inputParams.device)->defaultLowInputLatency;
+    inputParams.hostApiSpecificStreamInfo = nullptr;
+    err = Pa_OpenStream(&stream, &inputParams, nullptr, SAMPLE_RATE, paFramesPerBufferUnspecified, paNoFlag, nullptr, nullptr);
+    if (err != paNoError) {
+        std::cerr << "Error opening audio stream: " << Pa_GetErrorText(err) << std::endl;
+        Pa_Terminate();
+        return 1;
+    }
+
+    // Start the audio stream
+    err = Pa_StartStream(stream);
+    if (err != paNoError) {
+        std::cerr << "Error starting audio stream: " << Pa_GetErrorText(err) << std::endl;
+        Pa_CloseStream(stream);
+        Pa_Terminate();
+        return 1;
+    }
+
+    std::cout << "Recording started. Press Enter to stop recording." << std::endl;
+    std::cin.ignore();
+    err = Pa_StopStream(stream);
+    if (err != paNoError) {
+        std::cerr << "Error stopping audio stream: " << Pa_GetErrorText(err) << std::endl;
+    }
+    err = Pa_CloseStream(stream);
+    if (err != paNoError) {
+        std::cerr << "Error closing audio stream: " << Pa_GetErrorText(err) << std::endl;
+    }
+
+    Pa_Terminate();
+
+    std::cout << "Recording stopped." << std::endl;
+
+    return 0;
+}
